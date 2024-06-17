@@ -14,7 +14,7 @@ truncate = 8
 
 print(len(data_list))
 
-from run_with_earlystopping import check
+from run_with_earlystopping_copy import check
 
 retry_times = []
 retry_times_no_one = []
@@ -36,14 +36,14 @@ for file in data_list:
                 pass
             else:
                 answers.append(i)
-        if checklist(data['ground_truth'],answers[2:4]):
+        
+        # to look at pass@1, replace answers with answers[:1]
+        if checklist(data['ground_truth'],answers):
             right += 1
         else:
             all_fail += 1
 
-
 import numpy as np
-
 
 all_len = len(data_list)
 print('Acc rate',right,all_len,right/all_len)

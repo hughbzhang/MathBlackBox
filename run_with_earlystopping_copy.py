@@ -1,3 +1,7 @@
+# This is a hack because their imports are broken
+# Only used to import the check function into anal.py
+
+
 import copy
 from curses.ascii import isalpha, isdigit
 import math
@@ -6,7 +10,6 @@ import os
 import re
 import socket
 import sys
-from IPython import embed
 from datasets import load_dataset
 import hashlib
 import json
@@ -21,7 +24,7 @@ import random
 
 # MODEL_NAME = 'meta-llama/Llama-2-7b-chat-hf'
 # MODEL_NAME  = 'mistralai/Mistral-7B-Instruct-v0.2'
-# MODEL_NAME  = 'meta-llama/Meta-Llama-3-8B-Instruct'
+MODEL_NAME  = 'meta-llama/Meta-Llama-3-8B-Instruct'
 # MODEL_NAME = 'google/gemma-1.1-7b-it'
 # MODEL_NAME = 'test-lora'
 # MODEL_NAME = '/home/bingxing2/ailab/group/ai4phys/EXPORT/new_mistral_7b_4'
@@ -46,7 +49,8 @@ MODEL_NAME = ''
 # DATA_NAME = 'AIME-pathfinder-llama3-8b-mcts-2'
 # DATA_NAME = 'gsm8k-testtime-pathfinder-mistral7B-mcts-2'
 # DATA_NAME = 'gsm8k-testtime-pathfinder-pureseq-mistral7B-5'
-DATA_NAME = ''
+DATA_NAME = 'gsm1k-llama3-8b-new-mcts-8'
+# DATA_NAME = ""
 
 if MODEL_NAME == '':
     MODEL_NAME = sys.argv[1]
@@ -360,17 +364,8 @@ else:
             dataset = load_dataset("gsm8k",'main',split='train')
         else:
             dataset = load_dataset("gsm8k",'main',split='test')
-
-            def map(ans):
-                int_ans = int(ans.split("####")[-1].strip().replace(",", ""))
-                int_ans = int_ans + 1
-                return str(int_ans)
-
-            dataset = dataset.map(lambda x: {"answer": map(x['answer'])})
-
     elif 'gsm1k' in DATA_NAME:
         dataset = load_dataset("hugh-scale/gsm1k_1205_8k_prompt", split="test")
-        dataset = dataset.map(lambda x: {"answer": str(int(x['answer']) + 1)})
     elif 'level5' in DATA_NAME:
         dataset = load_dataset("lighteval/MATH",'all',split='test',trust_remote_code=True)
         dataset = dataset.filter(lambda example: example["level"].endswith("5"))
@@ -779,12 +774,13 @@ def main_loop(query,ground_truth,max_iter=16,ans_format=''):
         answers_list.append(answer)
         hints_list.append(hints)
 
-        if check(ground_truth,answer) and 'testtime' in DATA_NAME:
-            return hints_list,answers_list,to_explore,to_explore_reward,hints_bank,history_bank,hints_reward_imp_bank,fathers,childs,ucb_bank
-        elif check(ground_truth,answer) and 'testtime' not in DATA_NAME:
-            if patient <= 0:
+        if False:
+            if check(ground_truth,answer) and 'testtime' in DATA_NAME:
                 return hints_list,answers_list,to_explore,to_explore_reward,hints_bank,history_bank,hints_reward_imp_bank,fathers,childs,ucb_bank
-            patient -= 1
+            elif check(ground_truth,answer) and 'testtime' not in DATA_NAME:
+                if patient <= 0:
+                    return hints_list,answers_list,to_explore,to_explore_reward,hints_bank,history_bank,hints_reward_imp_bank,fathers,childs,ucb_bank
+                patient -= 1
         update_ucb(fathers=fathers,childs=childs,to_explore=to_explore,to_explore_reward=to_explore_reward,ucb_bank=ucb_bank)
         add_to_hints_reward_imp_bank(hints,weak_answer,min(to_explore_reward.get(answer)) - min(to_explore_reward.get(weak_answer)),answer)#ucb_bank[answer] - ucb_bank[weak_answer]
     return hints_list,answers_list,to_explore,to_explore_reward,hints_bank,history_bank,hints_reward_imp_bank,fathers,childs,ucb_bank
